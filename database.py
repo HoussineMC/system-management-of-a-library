@@ -5,7 +5,7 @@ import sqlite3
 import logging
 from dotenv import load_dotenv
 
-# Configuration
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(current_dir, 'manager.env'))
 
@@ -24,7 +24,7 @@ def create_database():
     with sqlite3.connect(DATABASE_NAME) as conn:
         cursor = conn.cursor()
         
-        # Create books table with correct schema
+        
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS books (
                 book_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +44,7 @@ def sign_up(username: str, password: str, email: str) -> bool:
     if not username or not password or not email:
         return False
 
-    # Validate email format
+    
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         logging.warning("Invalid email format")
         return False
@@ -52,16 +52,16 @@ def sign_up(username: str, password: str, email: str) -> bool:
     try:
         with sqlite3.connect(DATABASE_NAME) as conn:
             cursor = conn.cursor()
-            # Check if username exists
+            
             cursor.execute('SELECT 1 FROM users WHERE username = ?', (username,))
             if cursor.fetchone():
                 logging.warning("Username already exists")
                 return False
             
-            # Hash password with pepper
+            
             hashed = bcrypt.hashpw(password.encode() + PEPPER, bcrypt.gensalt())
             
-            # Insert new user
+            
             cursor.execute(
                 'INSERT INTO users (username, password, email) VALUES (?, ?, ?)',
                 (username, hashed, email)
@@ -83,7 +83,7 @@ def login(username: str, password: str) -> dict:
                          (username,))
             user = cursor.fetchone()
             
-            if user and verify_password(password, user[2]):  # Index 2 is the hashed password
+            if user and verify_password(password, user[2]): 
                 return {
                     'user_id': user[0],
                     'username': user[1],
@@ -113,7 +113,7 @@ def add_book(title: str, author: str, book_type: str = 'fiction', genre_or_subje
         with sqlite3.connect(DATABASE_NAME) as conn:
             cursor = conn.cursor()
             
-            # Print debug information
+            
             print(f"Adding book: {title=}, {author=}, {book_type=}, {genre_or_subject=}")
             
             cursor.execute('''
@@ -127,11 +127,11 @@ def add_book(title: str, author: str, book_type: str = 'fiction', genre_or_subje
             
     except sqlite3.Error as e:
         logging.error(f"Error adding book: {e}")
-        print(f"Database error: {e}")  # Debug print
+        print(f"Database error: {e}")  
         return False
     except Exception as e:
         logging.error(f"Unexpected error adding book: {e}")
-        print(f"Unexpected error: {e}")  # Debug print
+        print(f"Unexpected error: {e}") 
         return False
 
 def get_books():
@@ -150,7 +150,7 @@ def get_books():
             ''')
             return cursor.fetchall()
     except sqlite3.Error as e:
-        print(f"Error getting books: {e}")  # Debug print
+        print(f"Error getting books: {e}")  
         return []
 
 def get_books_by_author(author: str):
@@ -176,7 +176,7 @@ def borrow_book(user, book_id):
         with sqlite3.connect(DATABASE_NAME) as conn:
             cursor = conn.cursor()
             
-            # Check if book exists and is available
+            
             cursor.execute('SELECT status FROM books WHERE book_id = ?', (book_id,))
             result = cursor.fetchone()
             
@@ -188,7 +188,7 @@ def borrow_book(user, book_id):
                 logging.error("Book is not available")
                 return False
                 
-            # Update book status
+           
             cursor.execute('''
                 UPDATE books 
                 SET status = 'Borrowed',
@@ -209,7 +209,7 @@ def return_book(user_id, book_id):
         with sqlite3.connect(DATABASE_NAME) as conn:
             cursor = conn.cursor()
             
-            # Check if the book exists and is borrowed by this user
+            
             cursor.execute('''
                 SELECT status, borrower_id 
                 FROM books 
@@ -219,16 +219,16 @@ def return_book(user_id, book_id):
             book = cursor.fetchone()
             
             if not book:
-                print(f"Book {book_id} not found")  # Debug print
+                print(f"Book {book_id} not found")  
                 return False
                 
             status, current_borrower = book
             
             if status != 'Borrowed' or current_borrower != user_id:
-                print(f"Book status: {status}, borrower: {current_borrower}, user: {user_id}")  # Debug print
+                print(f"Book status: {status}, borrower: {current_borrower}, user: {user_id}")  
                 return False
             
-            # Update book status to Available
+            
             cursor.execute('''
                 UPDATE books 
                 SET status = 'Available',
@@ -240,7 +240,7 @@ def return_book(user_id, book_id):
             return True
             
     except sqlite3.Error as e:
-        print(f"Database error: {e}")  # Debug print
+        print(f"Database error: {e}")  
         return False
 
 def get_book_types():
@@ -276,9 +276,7 @@ def book_exists(title, author):
         logging.error(f"Book check error: {e}")
         return False
 
-# ========================
-# User Management
-# ========================
+
 
 def get_all_users():
     """Get all registered users"""
@@ -296,9 +294,9 @@ def delete_user(user_id):
     try:
         with sqlite3.connect(DATABASE_NAME) as conn:
             cursor = conn.cursor()
-            # Clear book references first
+            
             cursor.execute('UPDATE books SET borrower_id = NULL WHERE borrower_id = ?', (user_id,))
-            # Delete user
+            
             cursor.execute('DELETE FROM users WHERE user_id = ?', (user_id,))
             conn.commit()
             return True
@@ -306,9 +304,7 @@ def delete_user(user_id):
         logging.error(f"Error deleting user: {str(e)}")
         return False
 
-# ========================
-# Security Functions
-# ========================
+
 
 def hash_password(password: str) -> bytes:
     """Hash the password using bcrypt and pepper."""
@@ -318,9 +314,7 @@ def verify_password(password: str, hashed: bytes) -> bool:
     """Verify the password against the hashed password."""
     return bcrypt.checkpw(password.encode() + PEPPER, hashed)
 
-# ========================
-# Validation Functions
-# ========================
+
 
 def validate_email(email: str) -> bool:
     """Validate email format."""
